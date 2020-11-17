@@ -21,7 +21,6 @@ router.post('/posting',(req,res) => {
     });
     posting.save()
     .then(data =>{
-        console.log(data)
         res.json(data);
     })
     .catch(err => {
