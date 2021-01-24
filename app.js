@@ -16,8 +16,7 @@ const certificate = require('./routes/certificate')
 const auth = require('./routes/auth')
 app.use('/data',experience,education,certificate)
 app.use('/',auth)
-app.get('/', (req, res) => res.send('Hello World!'))
-
+app.get('/', (req, res) => res.send('Hello World!'))    
 
 mongoose.connect(
     process.env.DB_CONNECTION, {useNewUrlParser: true},()=>
