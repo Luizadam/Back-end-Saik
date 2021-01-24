@@ -1,5 +1,5 @@
 const nodemailer = require('nodemailer')
-const { getMaxListeners } = require('../models/Regist')
+const { getMaxListeners } = require('../models/Regist_user')
 
 exports.kirimEmail = dataEmail => {
     let transporter = nodemailer.createTransport({

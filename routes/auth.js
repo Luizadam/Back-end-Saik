@@ -1,25 +1,26 @@
 const express = require("express");
 const router = express.Router();
 const bcrypt = require("bcryptjs");
-const Regitser = require("../models/Regist");
+const registUser = require("../models/Regist_user");
+const registCompany = require('../models/Regits_company')
 const {registerValidate,loginValidate} = require('../validation');
 const jwt = require('jsonwebtoken');
 const saltRounds = 10;
 const {kirimEmail} = require("../helpers");
-const { findOne } = require("../models/Regist");
+const { findOne } = require("../models/Regist_user");
 
 
 
-router.post("/register", async (req, res) => {
+router.post("/register/user", async (req, res) => {
 
   const { error } = registerValidate(req.body);
   if(error) return res.status(400).send(error.details )
   const salt = await bcrypt.genSalt(10);
   const hashPassword = await bcrypt.hash(req.body.password, salt);
-  const register = new Regitser({
+  const register = new registUser({
     fullname: req.body.fullname,
     email: req.body.email,
-    password: hashPassword,
+    password: hashPassword
   });
   try {
     const savedRegister = await register.save();
@@ -30,20 +31,55 @@ router.post("/register", async (req, res) => {
   console.log(register);
 });
 
+// regist For company
+
+router.post("/register/company", async (req, res) => {
+
+  // const { error } = registerValidate(req.body);
+  // if(error) return res.status(400).send(error.details )
+  const salt = await bcrypt.genSalt(10);
+  const hashPassword = await bcrypt.hash(req.body.password, salt);
+  const register = new registCompany({
+    companyName: req.body.companyName,
+    email: req.body.email,
+    noTlpn:req.body.noTlpn,
+    password: hashPassword
+  });
+  try {
+    const savedRegister = await register.save();
+    res.send(savedRegister);
+  } catch (err) {
+    res.status(400).send({"message" : "email is already registered"});
+  }
+  console.log(register);
+});
+
+
+
 router.post("/login", async (req, res) => {
     const { error } = loginValidate(req.body);
     if(error) return res.status(400).send(error.details )
-    //make sure email available in database
-    const user = await  Regitser.findOne({email:req.body.email})
-    //if password wrong then status bad request
+    const user = await  registUser.findOne({email:req.body.email})
     if(!user) return res.status(400).send({message:"email or password is wrong"})
-    //compare password 
     const validPass = await  bcrypt.compare(req.body.password, user.password)
-    //alert passoword if pasword not same with password in database
-    if(!validPass) return res.status(400).send({message:"Password is wrong"})
-    const token = jwt.sign({id:user.id,email:user.email,fullname:user.fullname}, process.env.TOKEN_SECRET);
+    if(!validPass) return res.status(400).send("Password is wrong")
+    const token = jwt.sign({id:user.id,email:user.email,fullname:user.fullname,role:user.role}, process.env.TOKEN_SECRET);
     var decoded = jwt.verify(token, process.env.TOKEN_SECRET );
     res.header('auth-token',token).send({token:token,user:decoded});
+});
+
+// login For Company
+
+router.post("/login/company", async (req, res) => {
+  const { error } = loginValidate(req.body);
+  if(error) return res.status(400).send(error.details)
+  const user = await  registCompany.findOne({email:req.body.email})
+  if(!user) return res.status(400).send({message:"email or password is wrong"})
+  const validPass = await  bcrypt.compare(req.body.password, user.password)
+  if(!validPass) return res.status(400).send("Password is wrong")
+  const token = jwt.sign({id:user.id,email:user.email,fullname:user.companyName,noTlpn:user.noTlpn}, process.env.TOKEN_SECRET);
+  var decoded = jwt.verify(token, process.env.TOKEN_SECRET );
+  res.header('auth-token',token).send({token:token,user:decoded});
 });
 
 function checkToken(token) {
@@ -57,7 +93,7 @@ function checkToken(token) {
 
 router.put('/forgotPass', async (req,res) => {
   
-  const user = await Regitser.findOne({email:req.body.email})
+  const user = await registUser.findOne({email:req.body.email})
 try{
   if (!user)return res.status(404).json ({
     message: "email not found"
@@ -87,15 +123,16 @@ catch(err){
 
 router.put('/resetpassword', async (req,res) => {
   const {token,password} = req.body
-  const user   = await Regitser.findOne({resetPasswordLink:token})
-  if(user){
-    const hashPassword = await bcrypt.hash(password,10)
-    user.password = hashPassword
-    await user.save()
-    return res.status(201).json({
-      status:true,
-      message:"perubahan berhasil!"
-    })
-  }
+  const user   = await registUser.find({resetPasswordLink:token})
+  console.log(user)
+  // if(user){
+  //   const hashPassword = await bcrypt.hash(password,10)
+  //   user.password = hashPassword
+  //   await user.save()
+  //   return res.status(201).json({
+  //     status:true,
+  //     message:"perubahan berhasil!"
+  //   })
+  // }
 })
 module.exports = router;
